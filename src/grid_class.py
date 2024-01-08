@@ -9,9 +9,28 @@ class GridSquare:
     square holds some color
     """
 
-    def __init__(self, c=None):
-        self.color = c
-        self.filled = (c is not None)
+    def __init__(self, x, y, sq_size):
+        r_coordinate = (x * sq_size[0], y * sq_size[1])
+        self.rect = pygame.Rect(*r_coordinate, sq_size[0], sq_size[1])
+        self.sq_size = sq_size
+
+        self.color = None
+        self.color_filled = False
+
+        self.image = None
+        self.image_center = None
+        self.image_filled = False
+
+    def set_image(self, image):
+        image_size = (image.get_width(), image.get_height())
+        max_ratio = min(self.sq_size[0] / image_size[0], self.sq_size[1] / image_size[1])
+
+        image = pygame.transform.scale(image, (image_size[0] * max_ratio, image_size[1] * max_ratio))
+
+        self.image_center = self.rect.center
+
+        self.image = image
+        self.image_filled = True
 
 
 class GridGraphics:
@@ -24,9 +43,9 @@ class GridGraphics:
     def __init__(self, x, y):
         GridGraphics.init_pygame()
 
-        self.grid = [[GridSquare() for j in range(x)] for i in range(y)]
         self.dim = (x, y)
         self.sq_size = (st.SCREEN_SIZE_X // x, st.SCREEN_SIZE_Y // y)
+        self.grid = [[GridSquare(j, i, self.sq_size) for j in range(x)] for i in range(y)]
         self.pos = [(xx, yy) for xx in range(self.dim[0]) for yy in range(self.dim[1])]
 
         self.screen = pygame.display.set_mode((st.SCREEN_SIZE_X, st.SCREEN_SIZE_Y))
@@ -54,18 +73,22 @@ class GridGraphics:
     def color_square(self, x, y, color):
         sq = self[x, y]
         sq.color = color
-        sq.filled = True
+        sq.color_filled = True
 
-    def clear_square(self, x, y):
+    def add_image(self, x, y, image_path):
+        sq = self[x, y]
+        sq.set_image(pygame.image.load(image_path).convert())
+
+    def clear_square_color(self, x, y):
         sq = self[x, y]
         sq.color = None
-        sq.filled = False
+        sq.color_filled = False
 
     def clear_all(self):
         for x, y in self.pos:
-            self.clear_square(x, y)
+            self.clear_square_color(x, y)
 
-    def hold(self, delay_s):
+    def hold(self, delay_s=float("inf")):
         """ don't change the grid for a number of ms but still keep track of window updates """
         start_time = pygame.time.get_ticks()
         delay_ms = delay_s * 1000
@@ -89,10 +112,10 @@ class GridGraphics:
     def draw_grid_squares(self):
         for x, y in self.pos:
             sq = self.grid[y][x]
-            if sq.filled:  # square has some color
-                r_coordinate = (x * self.sq_size[0], y * self.sq_size[1])
-                r = pygame.Rect(*r_coordinate, self.sq_size[0], self.sq_size[1])
-                pygame.draw.rect(self.screen, sq.color, r)
+            if sq.color_filled:  # square has some color
+                pygame.draw.rect(self.screen, sq.color, sq.rect)  # draw background color
+            if sq.image_filled:
+                self.screen.blit(sq.image, sq.rect)
 
     def draw_grid_lines(self):
         for y in range(self.dim[1]):
@@ -114,7 +137,3 @@ class GridGraphics:
 
         pygame.display.update()
         self.events = pygame.event.get()
-
-
-
-
