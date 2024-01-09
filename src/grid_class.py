@@ -18,7 +18,7 @@ class GridGraphics:
         self.grid = [[GridSquare(j, i, self.sq_size) for j in range(x)] for i in range(y)]
         self.pos = [(xx, yy) for xx in range(self.dim[0]) for yy in range(self.dim[1])]
 
-        self.changed_squraes = set()
+        self.changed_squares = set()
 
         self.screen = pygame.display.set_mode((st.SCREEN_SIZE_X, st.SCREEN_SIZE_Y))
         self.screen.fill(st.BACKGROUND)
@@ -44,7 +44,7 @@ class GridGraphics:
         return self.grid[y][x]
 
     def update_square(self, x, y):
-        self.changed_squraes.add((x, y))
+        self.changed_squares.add((x, y))
 
     def color_square(self, x, y, color):
         sq = self[x, y]
@@ -96,7 +96,7 @@ class GridGraphics:
                 exit()
 
     def draw_grid_squares(self):
-        for x, y in self.changed_squraes:
+        for x, y in self.changed_squares:
             sq = self.grid[y][x]
             if sq.color_filled:  # square has some color
                 pygame.draw.rect(self.screen, sq.color, sq.rect)
@@ -124,4 +124,4 @@ class GridGraphics:
 
         pygame.display.update()
         self.events = pygame.event.get()
-        self.changed_squraes.clear()
+        self.changed_squares.clear()
