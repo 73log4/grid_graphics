@@ -1,36 +1,6 @@
 import pygame
 import grid_settings as st
-
-
-class GridSquare:
-    """
-    A class that represents a square in the grid of a GridGraphics class.
-    has a color attribute and a filled attribute, which is true when the
-    square holds some color
-    """
-
-    def __init__(self, x, y, sq_size):
-        r_coordinate = (x * sq_size[0], y * sq_size[1])
-        self.rect = pygame.Rect(*r_coordinate, sq_size[0], sq_size[1])
-        self.sq_size = sq_size
-
-        self.color = None
-        self.color_filled = False
-
-        self.image = None
-        self.image_center = None
-        self.image_filled = False
-
-    def set_image(self, image):
-        image_size = (image.get_width(), image.get_height())
-        max_ratio = min(self.sq_size[0] / image_size[0], self.sq_size[1] / image_size[1])
-
-        image = pygame.transform.scale(image, (image_size[0] * max_ratio, image_size[1] * max_ratio))
-
-        self.image_center = self.rect.center
-
-        self.image = image
-        self.image_filled = True
+from grid_square import GridSquare
 
 
 class GridGraphics:
@@ -48,7 +18,10 @@ class GridGraphics:
         self.grid = [[GridSquare(j, i, self.sq_size) for j in range(x)] for i in range(y)]
         self.pos = [(xx, yy) for xx in range(self.dim[0]) for yy in range(self.dim[1])]
 
+        self.changed_squraes = set()
+
         self.screen = pygame.display.set_mode((st.SCREEN_SIZE_X, st.SCREEN_SIZE_Y))
+        self.screen.fill(st.BACKGROUND)
 
         self.events = pygame.event.get()
 
@@ -70,23 +43,36 @@ class GridGraphics:
         self.valid_square(x, y)
         return self.grid[y][x]
 
+    def update_square(self, x, y):
+        self.changed_squraes.add((x, y))
+
     def color_square(self, x, y, color):
         sq = self[x, y]
         sq.color = color
         sq.color_filled = True
+        self.update_square(x, y)
 
-    def add_image(self, x, y, image_path):
+    def add_image(self, x, y, image_path, pad=1):
+        """
+        adds the image to the grid to the specified square. the image can have padding,
+        which is represented by a percentage of the square
+        """
         sq = self[x, y]
-        sq.set_image(pygame.image.load(image_path).convert())
+        sq.set_image(pygame.image.load(image_path).convert_alpha(), pad)
+        self.update_square(x, y)
 
     def clear_square_color(self, x, y):
-        sq = self[x, y]
-        sq.color = None
-        sq.color_filled = False
+        self[x, y].clear_color()
+        self.update_square(x, y)
+
+    def clear_square_image(self, x, y):
+        self[x, y].clear_image()
+        self.update_square(x, y)
 
     def clear_all(self):
         for x, y in self.pos:
-            self.clear_square_color(x, y)
+            self[x, y].clear()
+            self.update_square(x, y)
 
     def hold(self, delay_s=float("inf")):
         """ don't change the grid for a number of ms but still keep track of window updates """
@@ -110,12 +96,14 @@ class GridGraphics:
                 exit()
 
     def draw_grid_squares(self):
-        for x, y in self.pos:
+        for x, y in self.changed_squraes:
             sq = self.grid[y][x]
             if sq.color_filled:  # square has some color
-                pygame.draw.rect(self.screen, sq.color, sq.rect)  # draw background color
+                pygame.draw.rect(self.screen, sq.color, sq.rect)
+            else:
+                pygame.draw.rect(self.screen, st.BACKGROUND, sq.rect)  # draw background color
             if sq.image_filled:
-                self.screen.blit(sq.image, sq.rect)
+                self.screen.blit(sq.image, sq.image_rect)
 
     def draw_grid_lines(self):
         for y in range(self.dim[1]):
@@ -131,9 +119,9 @@ class GridGraphics:
         """ draw the current state of the grid, save events and update the pygame display"""
         self.check_for_window_events()
 
-        self.screen.fill(st.BACKGROUND)
         self.draw_grid_squares()
         self.draw_grid_lines()
 
         pygame.display.update()
         self.events = pygame.event.get()
+        self.changed_squraes.clear()
