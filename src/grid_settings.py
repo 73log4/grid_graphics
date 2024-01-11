@@ -3,11 +3,23 @@ import pygame
 
 # ------ dimensions ----------------------------------------------------------------------------------------------------
 
-SCREEN_SIZE_X = 700
-SCREEN_SIZE_Y = 700
+SCREEN_SIZE_X = 660
+SCREEN_SIZE_Y = 660
+
+TEXT_BOX_HIGH = 50
+TEXT_LEFT_PAD = 20
+
+DEFAULT_X_SQUARES = 20  # default value for GridGraphics class
+DEFAULT_Y_SQUARES = (SCREEN_SIZE_Y * DEFAULT_X_SQUARES) // SCREEN_SIZE_X
 
 LINE_WIDTH = 1
 
+
+# ------ font ----------------------------------------------------------------------------------------------------------
+
+FONT_SIZE = 24
+FONT_TYPE = 'arial'
+DEFAULT_FONT_COLOR = (38, 50, 56)
 
 # ------ colors --------------------------------------------------------------------------------------------------------
 

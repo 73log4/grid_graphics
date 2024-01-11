@@ -10,7 +10,7 @@ class GridSquare:
     """
 
     def __init__(self, x, y, sq_size):
-        r_coordinate = (x * sq_size[0], y * sq_size[1])
+        r_coordinate = (x * sq_size[0], y * sq_size[1] + st.TEXT_BOX_HIGH)
         self.rect = pygame.Rect(*r_coordinate, sq_size[0], sq_size[1])
         self.sq_size = sq_size
 

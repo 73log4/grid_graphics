@@ -1,6 +1,7 @@
 import pygame
 import grid_settings as st
 from grid_square import GridSquare
+from text_manager import TextManager
 
 
 class GridGraphics:
@@ -10,17 +11,20 @@ class GridGraphics:
     The interface supports coloring/clearing squares and holding the window without change.
     """
 
-    def __init__(self, x, y):
+    def __init__(self, x=st.DEFAULT_X_SQUARES, y=st.DEFAULT_Y_SQUARES):
         GridGraphics.init_pygame()
 
         self.dim = (x, y)
-        self.sq_size = (st.SCREEN_SIZE_X // x, st.SCREEN_SIZE_Y // y)
+        self.sq_size = (st.SCREEN_SIZE_X / x, st.SCREEN_SIZE_Y / y)
         self.grid = [[GridSquare(j, i, self.sq_size) for j in range(x)] for i in range(y)]
         self.pos = [(xx, yy) for xx in range(self.dim[0]) for yy in range(self.dim[1])]
 
+        self.text_manager = TextManager()
+        self.text_changed = False
+
         self.changed_squares = set()
 
-        self.screen = pygame.display.set_mode((st.SCREEN_SIZE_X, st.SCREEN_SIZE_Y))
+        self.screen = pygame.display.set_mode((st.SCREEN_SIZE_X, st.SCREEN_SIZE_Y + st.TEXT_BOX_HIGH))
         self.screen.fill(st.BACKGROUND)
 
         self.events = pygame.event.get()
@@ -61,6 +65,10 @@ class GridGraphics:
         sq.set_image(pygame.image.load(image_path).convert_alpha(), pad)
         self.update_square(x, y)
 
+    def display_text(self, text):
+        self.text_manager.set_text(text)
+        self.text_changed = True
+
     def clear_square_color(self, x, y):
         self[x, y].clear_color()
         self.update_square(x, y)
@@ -75,7 +83,7 @@ class GridGraphics:
             self.update_square(x, y)
 
     def hold(self, delay_s=float("inf")):
-        """ don't change the grid for a number of ms but still keep track of window updates """
+        """ don't change the grid for a number of seconds but still keep track of window updates """
         start_time = pygame.time.get_ticks()
         delay_ms = delay_s * 1000
         while pygame.time.get_ticks() < start_time + delay_ms:
@@ -95,6 +103,20 @@ class GridGraphics:
             if ev.type == pygame.QUIT:
                 exit()
 
+    def draw_text(self):
+        if self.text_changed:
+            pygame.draw.rect(self.screen, st.BACKGROUND, self.text_manager.background)
+
+            text_surface = self.text_manager.get_text_surface()
+            text_rect = text_surface.get_rect()
+            text_rect.topleft = (st.TEXT_LEFT_PAD, (st.TEXT_BOX_HIGH - text_rect.height) // 2)
+            self.screen.blit(text_surface, text_rect)
+            self.text_changed = False
+
+    def clear_text(self):
+        self.text_manager.clear_text()
+        self.text_changed = True
+
     def draw_grid_squares(self):
         for x, y in self.changed_squares:
             sq = self.grid[y][x]
@@ -107,18 +129,22 @@ class GridGraphics:
 
     def draw_grid_lines(self):
         for y in range(self.dim[1]):
-            start_pos = (0, y * self.sq_size[1])
-            end_pos = (st.SCREEN_SIZE_X, y * self.sq_size[1])
+            start_pos = (0, y * self.sq_size[1] + st.TEXT_BOX_HIGH)
+            end_pos = (st.SCREEN_SIZE_X, y * self.sq_size[1] + st.TEXT_BOX_HIGH)
             pygame.draw.line(self.screen, st.LINE_COLOR, start_pos, end_pos, st.LINE_WIDTH)
         for x in range(1, self.dim[0]):
-            start_pos = (x * self.sq_size[0], 0)
-            end_pos = (x * self.sq_size[0], st.SCREEN_SIZE_X)
+            start_pos = (x * self.sq_size[0], st.TEXT_BOX_HIGH)
+            end_pos = (x * self.sq_size[0], st.SCREEN_SIZE_Y + st.TEXT_BOX_HIGH)
             pygame.draw.line(self.screen, st.LINE_COLOR, start_pos, end_pos, st.LINE_WIDTH)
 
-    def update(self):
+    def update(self, delay_seconds=0):
         """ draw the current state of the grid, save events and update the pygame display"""
+        if delay_seconds:
+            self.hold(delay_seconds)
+
         self.check_for_window_events()
 
+        self.draw_text()
         self.draw_grid_squares()
         self.draw_grid_lines()
 
