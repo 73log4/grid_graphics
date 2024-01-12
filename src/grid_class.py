@@ -14,10 +14,10 @@ class GridGraphics:
     def __init__(self, x=st.DEFAULT_X_SQUARES, y=st.DEFAULT_Y_SQUARES):
         GridGraphics.init_pygame()
 
-        self.dim = (x, y)
+        self.x_dim, self.y_dim = x, y
         self.sq_size = (st.SCREEN_SIZE_X / x, st.SCREEN_SIZE_Y / y)
         self.grid = [[GridSquare(j, i, self.sq_size) for j in range(x)] for i in range(y)]
-        self.pos = [(xx, yy) for xx in range(self.dim[0]) for yy in range(self.dim[1])]
+        self.pos = [(xx, yy) for xx in range(self.x_dim) for yy in range(self.y_dim)]
 
         self.text_manager = TextManager()
         self.text_changed = False
@@ -36,10 +36,13 @@ class GridGraphics:
         pygame.init()
         pygame.display.set_caption('Grid')
 
-    def valid_square(self, x, y):
+    def valid_square(self, x, y, err=True):
         """ raise a range error if square is out of grid range"""
-        if not (0 <= x < self.dim[0] and 0 <= y < self.dim[1]):
-            exit(f"Error: square coordinate ({x}, {y}) is out of range")
+        if not (0 <= x < self.x_dim and 0 <= y < self.y_dim):
+            if err:
+                exit(f"Error: square coordinate ({x}, {y}) is out of range")
+            return False
+        return True
 
     def __getitem__(self, cor):
         """ get the item at position [x, y] (not [x][y]) """
@@ -55,6 +58,11 @@ class GridGraphics:
         sq.color = color
         sq.color_filled = True
         self.update_square(x, y)
+
+    def color_rectangle(self, x, y, width, height, color):
+        for i in range(width):
+            for j in range(height):
+                self.color_square(x + i, y + j, color)
 
     def add_image(self, x, y, image_path, pad=1):
         """
@@ -79,8 +87,11 @@ class GridGraphics:
 
     def clear_all(self):
         for x, y in self.pos:
-            self[x, y].clear()
-            self.update_square(x, y)
+            sq = self[x, y]
+            if sq.color_filled or sq.image_filled:
+                self.clear_square_color(x, y)
+                self.clear_square_image(x, y)
+                self.update_square(x, y)
 
     def hold(self, delay_s=float("inf")):
         """ don't change the grid for a number of seconds but still keep track of window updates """
@@ -91,10 +102,12 @@ class GridGraphics:
 
     def get_events(self):
         """ returns a list with string representations of the possible events that are covered """
-        events_type, events_str = [ev.type for ev in self.events], []
-        for t in events_type:
-            if t in st.events_dic:
-                events_str.append(st.events_dic[t])
+        events, events_str = [ev for ev in self.events], []
+        for e in events:
+            if e.type == pygame.KEYDOWN:
+                key_type = e.key
+                if key_type in st.events_dic:
+                    events_str.append(st.events_dic[key_type])
         return events_str
 
     def check_for_window_events(self):
@@ -128,11 +141,11 @@ class GridGraphics:
                 self.screen.blit(sq.image, sq.image_rect)
 
     def draw_grid_lines(self):
-        for y in range(self.dim[1]):
+        for y in range(self.y_dim):
             start_pos = (0, y * self.sq_size[1] + st.TEXT_BOX_HIGH)
             end_pos = (st.SCREEN_SIZE_X, y * self.sq_size[1] + st.TEXT_BOX_HIGH)
             pygame.draw.line(self.screen, st.LINE_COLOR, start_pos, end_pos, st.LINE_WIDTH)
-        for x in range(1, self.dim[0]):
+        for x in range(1, self.x_dim):
             start_pos = (x * self.sq_size[0], st.TEXT_BOX_HIGH)
             end_pos = (x * self.sq_size[0], st.SCREEN_SIZE_Y + st.TEXT_BOX_HIGH)
             pygame.draw.line(self.screen, st.LINE_COLOR, start_pos, end_pos, st.LINE_WIDTH)
