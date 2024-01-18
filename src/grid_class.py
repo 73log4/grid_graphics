@@ -98,7 +98,7 @@ class GridGraphics:
         start_time = pygame.time.get_ticks()
         delay_ms = delay_s * 1000
         while pygame.time.get_ticks() < start_time + delay_ms:
-            self.update()
+            self.update(delay_seconds=0, hold=True)
 
     def get_events(self):
         """ returns a list with string representations of the possible events that are covered """
@@ -109,6 +109,18 @@ class GridGraphics:
                 if key_type in st.events_dic:
                     events_str.append(st.events_dic[key_type])
         return events_str
+
+    def load_events(self, hold=False):
+        new_events = pygame.event.get()
+        events = []
+        for ev in new_events:
+            if ev.type in st.COVERED_EVENTS:
+                events.append(ev)
+        if hold:
+            self.events += events
+        else:
+            self.events = events
+
 
     def check_for_window_events(self):
         """ check for any window events """
@@ -150,17 +162,18 @@ class GridGraphics:
             end_pos = (x * self.sq_size[0], st.SCREEN_SIZE_Y + st.TEXT_BOX_HIGH)
             pygame.draw.line(self.screen, st.LINE_COLOR, start_pos, end_pos, st.LINE_WIDTH)
 
-    def update(self, delay_seconds=0):
+    def update(self, delay_seconds=0, hold=False):
         """ draw the current state of the grid, save events and update the pygame display"""
-        if delay_seconds:
-            self.hold(delay_seconds)
-
         self.check_for_window_events()
 
         self.draw_text()
         self.draw_grid_squares()
         self.draw_grid_lines()
 
+        self.load_events(hold)
+
         pygame.display.update()
-        self.events = pygame.event.get()
         self.changed_squares.clear()
+
+        if delay_seconds:
+            self.hold(delay_seconds)

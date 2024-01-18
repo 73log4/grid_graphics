@@ -35,6 +35,8 @@ BLUE = (52, 152, 219)
 
 # ------- events dictionary --------------------------------------------------------------------------------------------
 
+COVERED_EVENTS = {pygame.KEYDOWN, pygame.QUIT}
+
 events_dic = {
     pygame.K_RIGHT: "RIGHT_KEY",
     pygame.K_LEFT: "LEFT_KEY",
