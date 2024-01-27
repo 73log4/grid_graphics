@@ -15,7 +15,7 @@ class GridGraphics:
         GridGraphics.init_pygame()
 
         self.x_dim, self.y_dim = x, y
-        self.sq_size = (st.SCREEN_SIZE_X / x, st.SCREEN_SIZE_Y / y)
+        self.sq_size = (st.SCREEN_SIZE_X // x, st.SCREEN_SIZE_Y // y)
         self.grid = [[GridSquare(j, i, self.sq_size) for j in range(x)] for i in range(y)]
         self.pos = [(xx, yy) for xx in range(self.x_dim) for yy in range(self.y_dim)]
 
